@@ -23,7 +23,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
           chmod 600 ~/.ssh/gitlab_deploy_key
-          ssh-keyscan git.kundeng.us ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLl/OZiKVDxwnyvMxa+rjKvDpKqTxH1GWuGuDPLmENGQMbTVulajZWr9x8Q1cotoJiHZkt7DA5vczcjB/4lwgWA= >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/gitlab_deploy_key
@@ -41,7 +41,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
           chmod 600 ~/.ssh/gitlab_deploy_key
-          ssh-keyscan git.kundeng.us ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLl/OZiKVDxwnyvMxa+rjKvDpKqTxH1GWuGuDPLmENGQMbTVulajZWr9x8Q1cotoJiHZkt7DA5vczcjB/4lwgWA= >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/gitlab_deploy_key
@@ -60,7 +60,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
           chmod 600 ~/.ssh/gitlab_deploy_key
-          ssh-keyscan git.kundeng.us ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLl/OZiKVDxwnyvMxa+rjKvDpKqTxH1GWuGuDPLmENGQMbTVulajZWr9x8Q1cotoJiHZkt7DA5vczcjB/4lwgWA= >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/gitlab_deploy_key
@@ -79,7 +79,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
           chmod 600 ~/.ssh/gitlab_deploy_key
-          ssh-keyscan git.kundeng.us ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLl/OZiKVDxwnyvMxa+rjKvDpKqTxH1GWuGuDPLmENGQMbTVulajZWr9x8Q1cotoJiHZkt7DA5vczcjB/4lwgWA= >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/gitlab_deploy_key
@@ -97,7 +97,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
           chmod 600 ~/.ssh/gitlab_deploy_key
-          ssh-keyscan git.kundeng.us ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLl/OZiKVDxwnyvMxa+rjKvDpKqTxH1GWuGuDPLmENGQMbTVulajZWr9x8Q1cotoJiHZkt7DA5vczcjB/4lwgWA= >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/gitlab_deploy_key
