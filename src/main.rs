@@ -3,9 +3,8 @@ use axum::{
     routing::{get, post},
 };
 
-pub mod callers;
-pub mod config;
-pub mod models;
+use icarus_auth::callers;
+use icarus_auth::config;
 
 #[tokio::main]
 async fn main() {
