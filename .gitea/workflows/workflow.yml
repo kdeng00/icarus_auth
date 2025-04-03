@@ -32,6 +32,22 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-24.04
+    # --- Add database service definition ---
+    services:
+      postgres:
+        image: postgres:17.4 # Or pin to a more specific version like 14.9
+        env:
+          # Use secrets for DB init, with fallbacks for flexibility
+          POSTGRES_USER: ${{ secrets.DB_TEST_USER || 'testuser' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'testpassword' }}
+          POSTGRES_DB: ${{ secrets.DB_TEST_NAME || 'testdb' }}
+        # Options to wait until the database is ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -51,7 +67,34 @@ jobs:
           echo "Docker environment check complete."
         # NOTE: Do NOT use continue-on-error here.
         # If Docker isn't working as expected, the job SHOULD fail here.
-      - run: |
+            # --- Optional but Recommended: Database Migrations Step ---
+      - name: Run Database Migrations
+        env:
+          # Define TEST_DATABASE_URL using service details and secrets
+          TEST_DATABASE_URL: postgresql://${{ secrets.DB_TEST_USER || 'testuser' }}:${{ secrets.DB_TEST_PASSWORD || 'testpassword' }}@postgres:5432/${{ secrets.DB_TEST_NAME || 'testdb' }}
+          # Make SSH agent available if migrations fetch private dependencies
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+        run: |
+          echo "Running database migrations..."
+          # ===> IMPORTANT: Replace placeholder below with your actual migration command <===
+          # Example: Install and run sqlx-cli
+          # cargo install sqlx-cli --no-default-features --features native-tls,postgres
+          # sqlx database setup --database-url $TEST_DATABASE_URL
+
+          # Example: Install and run diesel_cli
+          # cargo install diesel_cli --no-default-features --features postgres
+          # diesel migration run --database-url $TEST_DATABASE_URL
+
+          # echo "[Placeholder] Your migration command goes here."
+          # ===> End of Placeholder <===
+      - name: Run tests
+        env:
+          # Define TEST_DATABASE_URL for tests to use
+          TEST_DATABASE_URL: postgresql://${{ secrets.DB_TEST_USER || 'testuser' }}:${{ secrets.DB_TEST_PASSWORD || 'testpassword' }}@postgres:5432/${{ secrets.DB_TEST_NAME || 'testdb' }}
+          RUST_LOG: info # Optional: configure test log level
+          # Make SSH agent available if tests fetch private dependencies
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+        run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
           chmod 600 ~/.ssh/gitlab_deploy_key

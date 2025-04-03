@@ -12,7 +12,7 @@ tracing-subscriber = { version = "0.3.19" }
 tower = { version = "0.5.2" }
 hyper = { version = "1.6.0" }
 sqlx = { version = "0.8.3", features = ["postgres", "runtime-tokio-native-tls"] }
-dotenv = { version = "0.15" }
+dotenvy = { version = "0.15.7" }
 icarus_models = { git = "ssh://git@git.kundeng.us/phoenix/icarus_models.git", tag = "v0.2.0" }
 
 [dev-dependencies]
