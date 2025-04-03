@@ -21,11 +21,7 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn app() -> Router {
-    let pool = icarus_auth::db_pool::create_pool()
-        .await
-        .expect("Failed to create pool");
-
+async fn routes() -> Router {
     // build our application with a route
     Router::new()
         .route(callers::endpoints::DBTEST, get(callers::common::db_ping))
@@ -34,7 +30,14 @@ async fn app() -> Router {
             callers::endpoints::REGISTER,
             post(callers::register::register_user),
         )
-        .layer(axum::Extension(pool))
+}
+
+async fn app() -> Router {
+    let pool = icarus_auth::db_pool::create_pool()
+        .await
+        .expect("Failed to create pool");
+
+    routes().await.layer(axum::Extension(pool))
 }
 
 #[cfg(test)]
