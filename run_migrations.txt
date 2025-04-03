@@ -1,0 +1,3 @@
+cargo install sqlx-cli
+sqlx migrate add init_migration
+sqlx migrate run
