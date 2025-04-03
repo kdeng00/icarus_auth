@@ -21,12 +21,12 @@ jobs:
           toolchain: 1.85.0
       - run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
-          chmod 600 ~/.ssh/gitlab_deploy_key
+          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
+          chmod 600 ~/.ssh/icarus_models_deploy_key
           ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
-          ssh-add -v ~/.ssh/gitlab_deploy_key
+          ssh-add -v ~/.ssh/icarus_models_deploy_key
           cargo check
 
   test:
@@ -96,12 +96,12 @@ jobs:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
-          chmod 600 ~/.ssh/gitlab_deploy_key
+          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
+          chmod 600 ~/.ssh/icarus_models_deploy_key
           ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
-          ssh-add -v ~/.ssh/gitlab_deploy_key
+          ssh-add -v ~/.ssh/icarus_models_deploy_key
           cargo test
 
   fmt:
@@ -115,12 +115,12 @@ jobs:
       - run: rustup component add rustfmt
       - run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
-          chmod 600 ~/.ssh/gitlab_deploy_key
+          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
+          chmod 600 ~/.ssh/icarus_models_deploy_key
           ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
-          ssh-add -v ~/.ssh/gitlab_deploy_key
+          ssh-add -v ~/.ssh/icarus_models_deploy_key
           cargo fmt --all -- --check
 
   clippy:
@@ -134,12 +134,12 @@ jobs:
       - run: rustup component add clippy
       - run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
-          chmod 600 ~/.ssh/gitlab_deploy_key
+          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
+          chmod 600 ~/.ssh/icarus_models_deploy_key
           ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
-          ssh-add -v ~/.ssh/gitlab_deploy_key
+          ssh-add -v ~/.ssh/icarus_models_deploy_key
           cargo clippy -- -D warnings
 
   build:
@@ -152,11 +152,11 @@ jobs:
           toolchain: 1.85.0
       - run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/gitlab_deploy_key
-          chmod 600 ~/.ssh/gitlab_deploy_key
+          echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
+          chmod 600 ~/.ssh/icarus_models_deploy_key
           ssh-keyscan ${{ vars.MYHOST }} >> ~/.ssh/known_hosts
 
           eval $(ssh-agent -s)
-          ssh-add -v ~/.ssh/gitlab_deploy_key
+          ssh-add -v ~/.ssh/icarus_models_deploy_key
           cargo build --release
 
