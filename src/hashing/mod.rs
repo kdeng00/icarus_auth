@@ -8,12 +8,18 @@ use argon2::{
     },
 };
 
-pub fn hash_password(password: &String) -> Result<String, argon2::password_hash::Error> {
-    let password_bytes = password.as_bytes();
-
+pub fn generate_salt() -> Result<SaltString, argon2::Error> {
     // Generate a random salt
     // SaltString::generate uses OsRng internally for cryptographic security
     let salt = SaltString::generate(&mut OsRng);
+    Ok(salt)
+}
+
+pub fn hash_password(
+    password: &String,
+    salt: &SaltString,
+) -> Result<String, argon2::password_hash::Error> {
+    let password_bytes = password.as_bytes();
 
     // Create an Argon2 instance with default parameters (recommended)
     // You could customize parameters here if needed, but defaults are strong
@@ -22,7 +28,7 @@ pub fn hash_password(password: &String) -> Result<String, argon2::password_hash:
     // Hash the password with the salt
     // The output is a PasswordHash string format that includes algorithm, version,
     // parameters, salt, and the hash itself.
-    let password_hash = argon2.hash_password(password_bytes, &salt)?.to_string();
+    let password_hash = argon2.hash_password(password_bytes, salt)?.to_string();
 
     Ok(password_hash)
 }
@@ -56,7 +62,8 @@ mod tests {
     #[test]
     fn test_hash_password() {
         let some_password = String::from("somethingrandom");
-        match hash_password(&some_password) {
+        let salt = generate_salt().unwrap();
+        match hash_password(&some_password, &salt) {
             Ok(p) => match verify_password(&some_password, p.clone()) {
                 Ok(res) => {
                     assert_eq!(res, true);

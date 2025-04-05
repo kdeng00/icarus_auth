@@ -65,15 +65,8 @@ mod tests {
         http::{Request, StatusCode},
     };
     use http_body_util::BodyExt;
-    use serde::{Deserialize, Serialize};
     use serde_json::json;
     use tower::ServiceExt; // for `call`, `oneshot`, and `ready`
-
-    #[derive(Deserialize, Serialize)]
-    struct Response {
-        pub message: String,
-        pub data: icarus_auth::models::common::User,
-    }
 
     mod db_mgr {
         use std::str::FromStr;
@@ -191,14 +184,22 @@ mod tests {
 
         let app = init::routes().await.layer(axum::Extension(pool));
 
-        let usr = icarus_auth::models::common::CreateUser {
+        let usr = icarus_auth::callers::register::request::Request {
             username: String::from("somethingsss"),
             password: String::from("Raindown!"),
+            email: String::from("dev@null.com"),
+            phone: String::from("1234567890"),
+            firstname: String::from("Bob"),
+            lastname: String::from("Smith"),
         };
 
         let payload = json!({
             "username": &usr.username,
             "password": &usr.password,
+            "email": &usr.email,
+            "phone": &usr.phone,
+            "firstname": &usr.firstname,
+            "lastname": &usr.lastname,
         });
 
         let response = app
@@ -214,16 +215,27 @@ mod tests {
 
         match response {
             Ok(resp) => {
-                assert_eq!(resp.status(), StatusCode::CREATED, "Message: {:?}", resp);
+                assert_eq!(
+                    resp.status(),
+                    StatusCode::CREATED,
+                    "Message: {:?} {:?}",
+                    resp,
+                    usr.username
+                );
                 let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
                     .await
                     .unwrap();
-                let parsed_body: Response = serde_json::from_slice(&body).unwrap();
+                let parsed_body: callers::register::response::Response =
+                    serde_json::from_slice(&body).unwrap();
+                let returned_usr = &parsed_body.data[0];
+
+                assert_eq!(false, returned_usr.id.is_nil(), "Id is not populated");
 
                 assert_eq!(
-                    usr.username, parsed_body.data.username,
+                    usr.username, returned_usr.username,
                     "Usernames do not match"
                 );
+                assert!(returned_usr.date_created.is_some(), "Date Created is empty");
             }
             Err(err) => {
                 assert!(false, "Error: {:?}", err.to_string());

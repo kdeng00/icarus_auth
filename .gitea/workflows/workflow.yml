@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.85.0
+          toolchain: 1.86.0
       - run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.85.0
+          toolchain: 1.86.0
       # --- Add this step for explicit verification ---
       - name: Verify Docker Environment
         run: |
@@ -68,7 +68,6 @@ jobs:
           echo "Docker environment check complete."
         # NOTE: Do NOT use continue-on-error here.
         # If Docker isn't working as expected, the job SHOULD fail here.
-            # --- Optional but Recommended: Database Migrations Step ---
       - name: Run tests
         env:
           # Define DATABASE_URL for tests to use
@@ -94,7 +93,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.85.0
+          toolchain: 1.86.0
       - run: rustup component add rustfmt
       - run: |
           mkdir -p ~/.ssh
@@ -113,7 +112,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.85.0
+          toolchain: 1.86.0
       - run: rustup component add clippy
       - run: |
           mkdir -p ~/.ssh
@@ -132,7 +131,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.85.0
+          toolchain: 1.86.0
       - run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key

@@ -1,7 +1,6 @@
 pub mod callers;
 pub mod config;
 pub mod hashing;
-pub mod models;
 pub mod repo;
 
 pub mod keys {
