@@ -11,11 +11,15 @@ tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
 tracing-subscriber = { version = "0.3.19" }
 tower = { version = "0.5.2" }
 hyper = { version = "1.6.0" }
-sqlx = { version = "0.8.3", features = ["postgres", "runtime-tokio-native-tls"] }
+sqlx = { version = "0.8.3", features = ["postgres", "runtime-tokio-native-tls", "uuid"] }
 dotenvy = { version = "0.15.7" }
-icarus_models = { git = "ssh://git@git.kundeng.us/phoenix/icarus_models.git", tag = "v0.2.0" }
+uuid = { version = "1.16.0", features = ["v4", "serde"] }
+argon2 = { version = "0.5.3", features = ["std"] } # Use the latest 0.5.x version
+rand = { version = "0.9" }
+icarus_models = { git = "ssh://git@git.kundeng.us/phoenix/icarus_models.git", tag = "v0.3.0" }
 
 [dev-dependencies]
-http-body-util = "0.1.3"
+http-body-util = { version = "0.1.3" }
+url = { version = "2.5" }
 reqwest = { version = "0.12.5", features = ["json"] } # For making HTTP requests in tests
-once_cell = "1.19" # Useful for lazy initialization in tests/app setup
+once_cell = { version = "1.19" } # Useful for lazy initialization in tests/app setup

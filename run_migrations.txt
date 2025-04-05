@@ -1,3 +1,25 @@
+# Make sure role has CREATEDB
+ALTER ROLE username_that_needs_permission CREATEDB;
+
+# Install migrations
 cargo install sqlx-cli
+
+# Make sure to populate DATABASE_URL with correct value. 
+# By default, the DATABASE_URL found in .env file will be used
+export DATABASE_URL="postgres://icarus_op_test:password@localhost/icarus_auth_test"
+
+# init
 sqlx migrate add init_migration
 sqlx migrate run
+
+# Create
+sqlx database create
+
+# Drop
+sqlx database drop
+
+# setup
+sqlx database setup
+
+# Reset
+sqlx database reset

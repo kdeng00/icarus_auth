@@ -27,6 +27,7 @@ jobs:
 
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/icarus_models_deploy_key
+
           cargo check
 
   test:
@@ -68,29 +69,10 @@ jobs:
         # NOTE: Do NOT use continue-on-error here.
         # If Docker isn't working as expected, the job SHOULD fail here.
             # --- Optional but Recommended: Database Migrations Step ---
-      - name: Run Database Migrations
-        env:
-          # Define TEST_DATABASE_URL using service details and secrets
-          TEST_DATABASE_URL: postgresql://${{ secrets.DB_TEST_USER || 'testuser' }}:${{ secrets.DB_TEST_PASSWORD || 'testpassword' }}@postgres:5432/${{ secrets.DB_TEST_NAME || 'testdb' }}
-          # Make SSH agent available if migrations fetch private dependencies
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
-        run: |
-          echo "Running database migrations..."
-          # ===> IMPORTANT: Replace placeholder below with your actual migration command <===
-          # Example: Install and run sqlx-cli
-          # cargo install sqlx-cli --no-default-features --features native-tls,postgres
-          # sqlx database setup --database-url $TEST_DATABASE_URL
-
-          # Example: Install and run diesel_cli
-          # cargo install diesel_cli --no-default-features --features postgres
-          # diesel migration run --database-url $TEST_DATABASE_URL
-
-          # echo "[Placeholder] Your migration command goes here."
-          # ===> End of Placeholder <===
       - name: Run tests
         env:
-          # Define TEST_DATABASE_URL for tests to use
-          TEST_DATABASE_URL: postgresql://${{ secrets.DB_TEST_USER || 'testuser' }}:${{ secrets.DB_TEST_PASSWORD || 'testpassword' }}@postgres:5432/${{ secrets.DB_TEST_NAME || 'testdb' }}
+          # Define DATABASE_URL for tests to use
+          DATABASE_URL: postgresql://${{ secrets.DB_TEST_USER || 'testuser' }}:${{ secrets.DB_TEST_PASSWORD || 'testpassword' }}@postgres:5432/${{ secrets.DB_TEST_NAME || 'testdb' }}
           RUST_LOG: info # Optional: configure test log level
           # Make SSH agent available if tests fetch private dependencies
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
@@ -102,6 +84,7 @@ jobs:
 
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/icarus_models_deploy_key
+
           cargo test
 
   fmt:
@@ -159,4 +142,3 @@ jobs:
           eval $(ssh-agent -s)
           ssh-add -v ~/.ssh/icarus_models_deploy_key
           cargo build --release
-

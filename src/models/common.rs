@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct CreateUser {
     pub username: String,
+    pub password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct User {
+    pub id: uuid::Uuid,
     pub username: String,
+    pub password: String,
 }
