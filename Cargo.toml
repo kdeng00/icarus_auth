@@ -1,6 +1,6 @@
 [package]
 name = "icarus_auth"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.86"
 
@@ -18,7 +18,8 @@ uuid = { version = "1.16.0", features = ["v4", "serde"] }
 argon2 = { version = "0.5.3", features = ["std"] } # Use the latest 0.5.x version
 rand = { version = "0.9" }
 time = { version = "0.3.41", features = ["macros", "serde"] }
-icarus_models = { git = "ssh://git@git.kundeng.us/phoenix/icarus_models.git", tag = "v0.4.0" }
+josekit = { version = "0.10.1" }
+icarus_models = { git = "ssh://git@git.kundeng.us/phoenix/icarus_models.git", tag = "v0.4.1" }
 
 [dev-dependencies]
 http-body-util = { version = "0.1.3" }

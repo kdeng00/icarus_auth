@@ -2,6 +2,7 @@ pub mod callers;
 pub mod config;
 pub mod hashing;
 pub mod repo;
+pub mod token_stuff;
 
 pub mod keys {
     pub const DBURL: &str = "DATABASE_URL";
@@ -15,7 +16,7 @@ mod connection_settings {
     pub const MAXCONN: u32 = 5;
 }
 
-pub mod db_pool {
+pub mod db {
 
     use sqlx::postgres::PgPoolOptions;
     use std::env;
@@ -37,5 +38,14 @@ pub mod db_pool {
         dotenvy::dotenv().ok();
 
         env::var(keys::DBURL).expect(keys::error::ERROR)
+    }
+
+    pub async fn migrations(pool: &sqlx::PgPool) {
+        // Run migrations using the sqlx::migrate! macro
+        // Assumes your migrations are in a ./migrations folder relative to Cargo.toml
+        sqlx::migrate!("./migrations")
+            .run(pool)
+            .await
+            .expect("Failed to run migrations");
     }
 }

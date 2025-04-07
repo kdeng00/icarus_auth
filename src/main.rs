@@ -14,17 +14,6 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-mod db {
-    pub async fn migrations(pool: &sqlx::PgPool) {
-        // Run migrations using the sqlx::migrate! macro
-        // Assumes your migrations are in a ./migrations folder relative to Cargo.toml
-        sqlx::migrate!("./migrations")
-            .run(pool)
-            .await
-            .expect("Failed to run migrations on testcontainer DB");
-    }
-}
-
 mod init {
     use axum::{
         Router,
@@ -32,7 +21,6 @@ mod init {
     };
 
     use crate::callers;
-    use crate::db;
 
     pub async fn routes() -> Router {
         // build our application with a route
@@ -43,14 +31,18 @@ mod init {
                 callers::endpoints::REGISTER,
                 post(callers::register::register_user),
             )
+            .route(
+                callers::endpoints::LOGIN,
+                post(callers::login::endpoint::login),
+            )
     }
 
     pub async fn app() -> Router {
-        let pool = icarus_auth::db_pool::create_pool()
+        let pool = icarus_auth::db::create_pool()
             .await
             .expect("Failed to create pool");
 
-        db::migrations(&pool).await;
+        icarus_auth::db::migrations(&pool).await;
 
         routes().await.layer(axum::Extension(pool))
     }
@@ -141,6 +133,30 @@ mod tests {
         }
     }
 
+    fn get_test_register_request() -> icarus_auth::callers::register::request::Request {
+        icarus_auth::callers::register::request::Request {
+            username: String::from("somethingsss"),
+            password: String::from("Raindown!"),
+            email: String::from("dev@null.com"),
+            phone: String::from("1234567890"),
+            firstname: String::from("Bob"),
+            lastname: String::from("Smith"),
+        }
+    }
+
+    fn get_test_register_payload(
+        usr: &icarus_auth::callers::register::request::Request,
+    ) -> serde_json::Value {
+        json!({
+            "username": &usr.username,
+            "password": &usr.password,
+            "email": &usr.email,
+            "phone": &usr.phone,
+            "firstname": &usr.firstname,
+            "lastname": &usr.lastname,
+        })
+    }
+
     #[tokio::test]
     async fn test_hello_world() {
         let app = init::app().await;
@@ -180,27 +196,12 @@ mod tests {
 
         let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
 
-        db::migrations(&pool).await;
+        icarus_auth::db::migrations(&pool).await;
 
         let app = init::routes().await.layer(axum::Extension(pool));
 
-        let usr = icarus_auth::callers::register::request::Request {
-            username: String::from("somethingsss"),
-            password: String::from("Raindown!"),
-            email: String::from("dev@null.com"),
-            phone: String::from("1234567890"),
-            firstname: String::from("Bob"),
-            lastname: String::from("Smith"),
-        };
-
-        let payload = json!({
-            "username": &usr.username,
-            "password": &usr.password,
-            "email": &usr.email,
-            "phone": &usr.phone,
-            "firstname": &usr.firstname,
-            "lastname": &usr.lastname,
-        });
+        let usr = get_test_register_request();
+        let payload = get_test_register_payload(&usr);
 
         let response = app
             .oneshot(
@@ -236,6 +237,105 @@ mod tests {
                     "Usernames do not match"
                 );
                 assert!(returned_usr.date_created.is_some(), "Date Created is empty");
+            }
+            Err(err) => {
+                assert!(false, "Error: {:?}", err.to_string());
+            }
+        };
+
+        let _ = db_mgr::drop_database(&tm_pool, &db_name).await;
+    }
+
+    #[tokio::test]
+    async fn test_login_user() {
+        let tm_pool = db_mgr::get_pool().await.unwrap();
+
+        let db_name = db_mgr::generate_db_name().await;
+
+        match db_mgr::create_database(&tm_pool, &db_name).await {
+            Ok(_) => {
+                println!("Success");
+            }
+            Err(e) => {
+                assert!(false, "Error: {:?}", e.to_string());
+            }
+        }
+
+        let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
+
+        icarus_auth::db::migrations(&pool).await;
+
+        let app = init::routes().await.layer(axum::Extension(pool));
+
+        let usr = get_test_register_request();
+        let payload = get_test_register_payload(&usr);
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(axum::http::Method::POST)
+                    .uri(callers::endpoints::REGISTER)
+                    .header(axum::http::header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .unwrap(),
+            )
+            .await;
+
+        match response {
+            Ok(resp) => {
+                assert_eq!(
+                    resp.status(),
+                    StatusCode::CREATED,
+                    "Message: {:?} {:?}",
+                    resp,
+                    usr.username
+                );
+                let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+                    .await
+                    .unwrap();
+                let parsed_body: callers::register::response::Response =
+                    serde_json::from_slice(&body).unwrap();
+                let returned_usr = &parsed_body.data[0];
+
+                assert_eq!(false, returned_usr.id.is_nil(), "Id is not populated");
+
+                assert_eq!(
+                    usr.username, returned_usr.username,
+                    "Usernames do not match"
+                );
+                assert!(returned_usr.date_created.is_some(), "Date Created is empty");
+
+                let login_payload = json!({
+                    "username": &usr.username,
+                    "password": &usr.password,
+                });
+
+                match app
+                    .oneshot(
+                        Request::builder()
+                            .method(axum::http::Method::POST)
+                            .uri(callers::endpoints::LOGIN)
+                            .header(axum::http::header::CONTENT_TYPE, "application/json")
+                            .body(Body::from(login_payload.to_string()))
+                            .unwrap(),
+                    )
+                    .await
+                {
+                    Ok(resp) => {
+                        assert_eq!(StatusCode::OK, resp.status(), "Status is not right");
+                        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+                            .await
+                            .unwrap();
+                        let parsed_body: callers::login::response::Response =
+                            serde_json::from_slice(&body).unwrap();
+                        let login_result = &parsed_body.data[0];
+                        assert!(!login_result.id.is_nil(), "Id is nil");
+                    }
+                    Err(err) => {
+                        assert!(false, "Error: {:?}", err.to_string());
+                    }
+                }
             }
             Err(err) => {
                 assert!(false, "Error: {:?}", err.to_string());
