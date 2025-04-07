@@ -15,6 +15,10 @@ pub fn generate_salt() -> Result<SaltString, argon2::Error> {
     Ok(salt)
 }
 
+pub fn get_salt(s: &str) -> Result<SaltString, argon2::password_hash::Error> {
+    SaltString::from_b64(s)
+}
+
 pub fn hash_password(
     password: &String,
     salt: &SaltString,

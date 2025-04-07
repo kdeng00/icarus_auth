@@ -73,6 +73,7 @@ jobs:
           # Define DATABASE_URL for tests to use
           DATABASE_URL: postgresql://${{ secrets.DB_TEST_USER || 'testuser' }}:${{ secrets.DB_TEST_PASSWORD || 'testpassword' }}@postgres:5432/${{ secrets.DB_TEST_NAME || 'testdb' }}
           RUST_LOG: info # Optional: configure test log level
+          SECRET_KEY: ${{ secrets.TOKEN_SECRET_KEY }}
           # Make SSH agent available if tests fetch private dependencies
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
         run: |

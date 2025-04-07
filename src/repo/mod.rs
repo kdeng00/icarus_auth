@@ -7,6 +7,41 @@ pub mod user {
         pub date_created: Option<time::OffsetDateTime>,
     }
 
+    pub async fn get(
+        pool: &sqlx::PgPool,
+        username: &String,
+    ) -> Result<icarus_models::user::User, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+        SELECT * FROM "user" WHERE username = $1
+        "#,
+        )
+        .bind(username)
+        .fetch_optional(pool)
+        .await;
+
+        match result {
+            Ok(r) => match r {
+                Some(r) => Ok(icarus_models::user::User {
+                    id: r.try_get("id")?,
+                    username: r.try_get("username")?,
+                    password: r.try_get("password")?,
+                    email: r.try_get("email")?,
+                    email_verified: r.try_get("email_verified")?,
+                    phone: r.try_get("phone")?,
+                    salt_id: r.try_get("salt_id")?,
+                    firstname: r.try_get("firstname")?,
+                    lastname: r.try_get("lastname")?,
+                    date_created: r.try_get("date_created")?,
+                    last_login: r.try_get("last_login")?,
+                    status: r.try_get("status")?,
+                }),
+                None => Err(sqlx::Error::RowNotFound),
+            },
+            Err(e) => Err(e),
+        }
+    }
+
     pub async fn exists(pool: &sqlx::PgPool, username: &String) -> Result<bool, sqlx::Error> {
         let result = sqlx::query(
             r#"
@@ -70,6 +105,31 @@ pub mod salt {
     #[derive(Debug, serde::Serialize, sqlx::FromRow)]
     pub struct InsertedData {
         pub id: uuid::Uuid,
+    }
+
+    pub async fn get(
+        pool: &sqlx::PgPool,
+        id: &uuid::Uuid,
+    ) -> Result<icarus_models::user::salt::Salt, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+        SELECT * FROM "salt" WHERE id = $1
+        "#,
+        )
+        .bind(id)
+        .fetch_optional(pool)
+        .await;
+
+        match result {
+            Ok(r) => match r {
+                Some(r) => Ok(icarus_models::user::salt::Salt {
+                    id: r.try_get("id")?,
+                    salt: r.try_get("salt")?,
+                }),
+                None => Err(sqlx::Error::RowNotFound),
+            },
+            Err(e) => Err(e),
+        }
     }
 
     pub async fn insert(
