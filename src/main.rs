@@ -25,8 +25,14 @@ mod init {
     pub async fn routes() -> Router {
         // build our application with a route
         Router::new()
-            .route(callers::endpoints::DBTEST, get(callers::common::db_ping))
-            .route(callers::endpoints::ROOT, get(callers::common::root))
+            .route(
+                callers::endpoints::DBTEST,
+                get(callers::common::endpoint::db_ping),
+            )
+            .route(
+                callers::endpoints::ROOT,
+                get(callers::common::endpoint::root),
+            )
             .route(
                 callers::endpoints::REGISTER,
                 post(callers::register::register_user),

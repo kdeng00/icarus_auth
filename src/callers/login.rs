@@ -42,32 +42,10 @@ pub mod endpoint {
         axum::Extension(pool): axum::Extension<sqlx::PgPool>,
         Json(payload): Json<request::Request>,
     ) -> (StatusCode, Json<response::Response>) {
-        let usr = icarus_models::user::User {
-            username: payload.username,
-            password: payload.password,
-            ..Default::default()
-        };
-
         // Check if user exists
-        match repo::user::exists(&pool, &usr.username).await {
-            Ok(exists) => {
-                if !exists {
-                    return not_found("Not Found").await;
-                }
-            }
-            Err(err) => {
-                return not_found(&err.to_string()).await;
-            }
-        };
-
-        let user = repo::user::get(&pool, &usr.username).await.unwrap();
-        let salt = repo::salt::get(&pool, &user.salt_id).await.unwrap();
-        let salt_str = hashing::get_salt(&salt.salt).unwrap();
-
-        // Check if password is correct
-        match hashing::hash_password(&usr.password, &salt_str) {
-            Ok(hash_password) => {
-                if hashing::verify_password(&usr.password, hash_password.clone()).unwrap() {
+        match repo::user::get(&pool, &payload.username).await {
+            Ok(user) => {
+                if hashing::verify_password(&payload.password, user.password.clone()).unwrap() {
                     // Create token
                     let key = token_stuff::get_key().unwrap();
                     let (token_literal, duration) = token_stuff::create_token(&key).unwrap();

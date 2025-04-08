@@ -11,8 +11,7 @@ use argon2::{
 pub fn generate_salt() -> Result<SaltString, argon2::Error> {
     // Generate a random salt
     // SaltString::generate uses OsRng internally for cryptographic security
-    let salt = SaltString::generate(&mut OsRng);
-    Ok(salt)
+    Ok(SaltString::generate(&mut OsRng))
 }
 
 pub fn get_salt(s: &str) -> Result<SaltString, argon2::password_hash::Error> {
@@ -32,9 +31,7 @@ pub fn hash_password(
     // Hash the password with the salt
     // The output is a PasswordHash string format that includes algorithm, version,
     // parameters, salt, and the hash itself.
-    let password_hash = argon2.hash_password(password_bytes, salt)?.to_string();
-
-    Ok(password_hash)
+    Ok(argon2.hash_password(password_bytes, salt)?.to_string())
 }
 
 pub fn verify_password(
@@ -48,11 +45,9 @@ pub fn verify_password(
     let parsed_hash = argon2::PasswordHash::new(stored_hash.as_str())?;
 
     // Create an Argon2 instance (it will use the parameters from the parsed hash)
-    let argon2 = Argon2::default();
-
     // Verify the password against the parsed hash
     // This automatically uses the correct salt and parameters embedded in `parsed_hash`
-    match argon2.verify_password(password_bytes, &parsed_hash) {
+    match Argon2::default().verify_password(password_bytes, &parsed_hash) {
         Ok(()) => Ok(true),                                       // Passwords match
         Err(argon2::password_hash::Error::Password) => Ok(false), // Passwords don't match
         Err(e) => Err(e), // Some other error occurred (e.g., invalid hash format)
@@ -66,8 +61,7 @@ mod tests {
     #[test]
     fn test_hash_password() {
         let some_password = String::from("somethingrandom");
-        let salt = generate_salt().unwrap();
-        match hash_password(&some_password, &salt) {
+        match hash_password(&some_password, &generate_salt().unwrap()) {
             Ok(p) => match verify_password(&some_password, p.clone()) {
                 Ok(res) => {
                     assert_eq!(res, true);
@@ -78,6 +72,29 @@ mod tests {
             },
             Err(eerr) => {
                 assert!(false, "Error: {:?}", eerr.to_string());
+            }
+        }
+    }
+
+    #[test]
+    fn test_wrong_password() {
+        let some_password = String::from("somethingrandom");
+        match hash_password(&some_password, &generate_salt().unwrap()) {
+            Ok(p) => {
+                match verify_password(&some_password, p.clone()) {
+                    Ok(res) => {
+                        assert_eq!(res, true, "Passwords are not verified");
+                    }
+                    Err(err) => {
+                        assert!(false, "Error: {:?}", err.to_string());
+                    }
+                }
+                let wrong_password = String::from("Differentanotherlevel");
+                let result = verify_password(&wrong_password, p.clone()).unwrap();
+                assert_eq!(false, result, "Passwords should not match");
+            }
+            Err(err) => {
+                assert!(false, "Error: {:?}", err.to_string());
             }
         }
     }
