@@ -51,13 +51,16 @@ pub mod endpoint {
                     let (token_literal, duration) = token_stuff::create_token(&key).unwrap();
 
                     if token_stuff::verify_token(&key, &token_literal) {
+                        let current_time = time::OffsetDateTime::now_utc();
+                        let _ = repo::user::update_last_login(&pool, &user, &current_time).await;
+
                         (
                             StatusCode::OK,
                             Json(response::Response {
                                 message: String::from("Successful"),
                                 data: vec![icarus_models::login_result::LoginResult {
                                     id: user.id,
-                                    username: user.username,
+                                    username: user.username.clone(),
                                     token: token_literal,
                                     token_type: String::from(token_stuff::TOKENTYPE),
                                     expiration: duration,
