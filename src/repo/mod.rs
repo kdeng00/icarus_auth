@@ -42,6 +42,39 @@ pub mod user {
         }
     }
 
+    pub async fn update_last_login(
+        pool: &sqlx::PgPool,
+        user: &icarus_models::user::User,
+        time: &time::OffsetDateTime,
+    ) -> Result<time::OffsetDateTime, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE "user" SET last_login = $1 WHERE id = $2 RETURNING last_login
+            "#,
+        )
+        .bind(time)
+        .bind(user.id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| {
+            eprintln!("Error updating time: {}", e);
+            e
+        });
+
+        match result {
+            Ok(row) => match row {
+                Some(r) => {
+                    let last_login: time::OffsetDateTime = r
+                        .try_get("last_login")
+                        .map_err(|_e| sqlx::Error::RowNotFound)?;
+                    Ok(last_login)
+                }
+                None => Err(sqlx::Error::RowNotFound),
+            },
+            Err(err) => Err(err),
+        }
+    }
+
     pub async fn exists(pool: &sqlx::PgPool, username: &String) -> Result<bool, sqlx::Error> {
         let result = sqlx::query(
             r#"

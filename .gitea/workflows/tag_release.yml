@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - devel
-    tags:
-      - 'v*' # Trigger on tags matching v*
 
 jobs:
   release:
@@ -53,5 +51,3 @@ jobs:
            Release of version ${{ steps.version.outputs.project_tag_release }}
           # draft: false
           # prerelease: ${{ startsWith(github.ref, 'v') == false }} # prerelease if not a valid release tag
-
-
