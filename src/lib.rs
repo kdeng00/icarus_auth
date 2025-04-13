@@ -36,7 +36,6 @@ pub mod db {
     async fn get_db_url() -> String {
         #[cfg(debug_assertions)] // Example: Only load .env in debug builds
         dotenvy::dotenv().ok();
-
         env::var(keys::DBURL).expect(keys::error::ERROR)
     }
 

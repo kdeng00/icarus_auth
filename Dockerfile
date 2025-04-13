@@ -34,8 +34,6 @@ RUN --mount=type=ssh mkdir src && \
 # Copy the actual source code
 COPY src ./src
 # If you have other directories like `templates` or `static`, copy them too
-# COPY templates ./templates
-# COPY static ./static
 COPY .env ./.env
 COPY migrations ./migrations
 
@@ -64,8 +62,6 @@ COPY --from=builder /usr/src/app/target/release/icarus_auth .
 # It's generally better to configure via environment variables in Docker though
 COPY --from=builder /usr/src/app/.env .
 COPY --from=builder /usr/src/app/migrations ./migrations
-# COPY --from=builder /usr/src/app/templates ./templates
-# COPY --from=builder /usr/src/app/static ./static
 
 # Expose the port your Axum app listens on (e.g., 3000 or 8000)
 EXPOSE 3000
