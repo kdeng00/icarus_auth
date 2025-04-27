@@ -3,7 +3,9 @@ version: '3.8' # Use a recent version
 services:
   # Your Rust Application Service
   auth_api:
-    build: . # Tells docker-compose to build the Dockerfile in the current directory
+    build: # Tells docker-compose to build the Dockerfile in the current directory
+      context: .
+      ssh: ["default"]  # Uses host's SSH agent
     container_name: icarus_auth # Optional: Give the container a specific name
     ports:
       # Map host port 8000 to container port 3000 (adjust as needed)
