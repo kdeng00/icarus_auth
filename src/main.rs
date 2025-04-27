@@ -74,6 +74,7 @@ mod tests {
         pub const LIMIT: usize = 6;
 
         pub async fn get_pool() -> Result<sqlx::PgPool, sqlx::Error> {
+            dotenvy::dotenv().ok(); // Load .env file if it exists
             let tm_db_url = std::env::var(keys::DBURL).expect("DATABASE_URL must be present");
             let tm_options = sqlx::postgres::PgConnectOptions::from_str(&tm_db_url).unwrap();
             sqlx::PgPool::connect_with(tm_options).await
