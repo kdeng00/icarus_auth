@@ -19,7 +19,7 @@ argon2 = { version = "0.5.3", features = ["std"] } # Use the latest 0.5.x versio
 rand = { version = "0.9" }
 time = { version = "0.3.41", features = ["macros", "serde"] }
 josekit = { version = "0.10.1" }
-icarus_models = { git = "ssh://git@git.kundeng.us/phoenix/icarus_models.git", tag = "v0.4.1" }
+icarus_models = { git = "ssh://git@git.kundeng.us/phoenix/icarus_models.git", tag = "v0.4.3" }
 
 [dev-dependencies]
 http-body-util = { version = "0.1.3" }
