@@ -12,12 +12,6 @@ pub const MESSAGE: &str = "Something random";
 pub const ISSUER: &str = "icarus_auth";
 pub const AUDIENCE: &str = "icarus";
 
-pub fn get_key() -> Result<String, dotenvy::Error> {
-    dotenvy::dotenv().ok();
-    let key = std::env::var(KEY_ENV).expect("SECRET_KEY_NOT_FOUND");
-    Ok(key)
-}
-
 pub fn get_issued() -> time::Result<time::OffsetDateTime> {
     Ok(time::OffsetDateTime::now_utc())
 }
@@ -51,7 +45,10 @@ pub fn create_token(provided_key: &String) -> Result<(String, i64), josekit::Jos
             payload.set_expires_at(&util::time_to_std_time(&expire).unwrap());
 
             let key: String = if provided_key.is_empty() {
-                get_key().unwrap()
+                let rt = tokio::runtime::Runtime::new().unwrap();
+
+                // Block on the async function to get the result
+                rt.block_on(icarus_envy::environment::get_secret_key())
             } else {
                 provided_key.to_owned()
             };
@@ -82,7 +79,8 @@ mod tests {
 
     #[test]
     fn test_tokenize() {
-        let special_key = get_key().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let special_key = rt.block_on(icarus_envy::environment::get_secret_key());
         match create_token(&special_key) {
             Ok((token, _duration)) => {
                 let result = verify_token(&special_key, &token);

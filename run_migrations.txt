@@ -1,3 +1,5 @@
+TODO: At some point, move this somewhere that is appropriate
+
 # Make sure role has CREATEDB
 ALTER ROLE username_that_needs_permission CREATEDB;
 

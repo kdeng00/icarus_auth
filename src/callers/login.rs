@@ -47,7 +47,7 @@ pub mod endpoint {
             Ok(user) => {
                 if hashing::verify_password(&payload.password, user.password.clone()).unwrap() {
                     // Create token
-                    let key = token_stuff::get_key().unwrap();
+                    let key = icarus_envy::environment::get_secret_key().await;
                     let (token_literal, duration) = token_stuff::create_token(&key).unwrap();
 
                     if token_stuff::verify_token(&key, &token_literal) {
