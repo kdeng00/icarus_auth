@@ -702,7 +702,7 @@ dependencies = [
 
 [[package]]
 name = "icarus_auth"
-version = "0.3.4"
+version = "0.3.10"
 dependencies = [
  "argon2",
  "axum",

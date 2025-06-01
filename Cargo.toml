@@ -1,6 +1,6 @@
 [package]
 name = "icarus_auth"
-version = "0.3.4"
+version = "0.3.10"
 edition = "2024"
 rust-version = "1.86"
 
