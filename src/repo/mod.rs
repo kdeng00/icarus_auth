@@ -57,7 +57,7 @@ pub mod user {
         .fetch_optional(pool)
         .await
         .map_err(|e| {
-            eprintln!("Error updating time: {}", e);
+            eprintln!("Error updating time: {e}");
             e
         });
 
@@ -113,7 +113,7 @@ pub mod user {
         .fetch_one(pool)
         .await
         .map_err(|e| {
-            eprintln!("Error inserting item: {}", e);
+            eprintln!("Error inserting item: {e}");
             e
         })?;
 
@@ -180,7 +180,7 @@ pub mod salt {
         .fetch_one(pool)
         .await
         .map_err(|e| {
-            eprintln!("Error inserting item: {}", e);
+            eprintln!("Error inserting item: {e}");
             e
         })?;
 
