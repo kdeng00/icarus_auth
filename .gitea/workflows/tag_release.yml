@@ -49,5 +49,3 @@ jobs:
           release_name: Release ${{ steps.version.outputs.project_tag_release }}
           body: |
            Release of version ${{ steps.version.outputs.project_tag_release }}
-          # draft: false
-          # prerelease: ${{ startsWith(github.ref, 'v') == false }} # prerelease if not a valid release tag
