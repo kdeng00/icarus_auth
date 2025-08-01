@@ -1,12 +1,11 @@
 use josekit::{
     self,
-    jws::{JwsHeader, alg::hmac::HmacJwsAlgorithm::Hs256},
-    jwt::{self, JwtPayload},
+    jws::alg::hmac::HmacJwsAlgorithm::Hs256,
+    jwt::{self},
 };
 
 use time;
 
-pub const TOKENTYPE: &str = "JWT";
 pub const KEY_ENV: &str = "SECRET_KEY";
 pub const MESSAGE: &str = "Something random";
 pub const ISSUER: &str = "icarus_auth";
@@ -21,46 +20,13 @@ pub fn get_expiration(issued: &time::OffsetDateTime) -> Result<time::OffsetDateT
     Ok(*issued + duration_expire)
 }
 
-mod util {
-    pub fn time_to_std_time(
-        provided_time: &time::OffsetDateTime,
-    ) -> Result<std::time::SystemTime, std::time::SystemTimeError> {
-        let converted = std::time::SystemTime::from(*provided_time);
-        Ok(converted)
-    }
-}
-
 pub fn create_token(provided_key: &String) -> Result<(String, i64), josekit::JoseError> {
-    let mut header = JwsHeader::new();
-    header.set_token_type(TOKENTYPE);
-
-    let mut payload = JwtPayload::new();
-    payload.set_subject(MESSAGE);
-    payload.set_issuer(ISSUER);
-    payload.set_audience(vec![AUDIENCE]);
-    match get_issued() {
-        Ok(issued) => {
-            let expire = get_expiration(&issued).unwrap();
-            payload.set_issued_at(&util::time_to_std_time(&issued).unwrap());
-            payload.set_expires_at(&util::time_to_std_time(&expire).unwrap());
-
-            let key: String = if provided_key.is_empty() {
-                let rt = tokio::runtime::Runtime::new().unwrap();
-
-                // Block on the async function to get the result
-                rt.block_on(icarus_envy::environment::get_secret_key())
-            } else {
-                provided_key.to_owned()
-            };
-
-            let signer = Hs256.signer_from_bytes(key.as_bytes()).unwrap();
-            Ok((
-                josekit::jwt::encode_with_signer(&payload, &header, &signer).unwrap(),
-                (expire - time::OffsetDateTime::UNIX_EPOCH).whole_seconds(),
-            ))
-        }
-        Err(e) => Err(josekit::JoseError::InvalidClaim(e.into())),
-    }
+    let resource = icarus_models::token::TokenResource {
+        message: String::from(MESSAGE),
+        issuer: String::from(ISSUER),
+        audiences: vec![String::from(AUDIENCE)],
+    };
+    icarus_models::token::create_token(provided_key, &resource, time::Duration::hours(4))
 }
 
 pub fn verify_token(key: &String, token: &String) -> bool {
@@ -74,7 +40,6 @@ pub fn verify_token(key: &String, token: &String) -> bool {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]

@@ -62,7 +62,7 @@ pub mod endpoint {
                                     id: user.id,
                                     username: user.username.clone(),
                                     token: token_literal,
-                                    token_type: String::from(token_stuff::TOKENTYPE),
+                                    token_type: String::from(icarus_models::token::TOKEN_TYPE),
                                     expiration: duration,
                                 }],
                             }),
