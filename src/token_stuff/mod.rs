@@ -29,6 +29,15 @@ pub fn create_token(provided_key: &String) -> Result<(String, i64), josekit::Jos
     icarus_models::token::create_token(provided_key, &resource, time::Duration::hours(4))
 }
 
+pub fn create_service_token(provided: &String) -> Result<(String, i64), josekit::JoseError> {
+    let resource = icarus_models::token::TokenResource {
+        message: String::from("Service random"),
+        issuer: String::from(ISSUER),
+        audiences: vec![String::from(AUDIENCE)],
+    };
+    icarus_models::token::create_token(provided, &resource, time::Duration::hours(1))
+}
+
 pub fn verify_token(key: &String, token: &String) -> bool {
     let ver = Hs256.verifier_from_bytes(key.as_bytes()).unwrap();
     let (payload, _header) = jwt::decode_with_verifier(token, &ver).unwrap();

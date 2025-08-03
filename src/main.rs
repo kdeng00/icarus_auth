@@ -41,6 +41,10 @@ mod init {
                 callers::endpoints::LOGIN,
                 post(callers::login::endpoint::login),
             )
+            .route(
+                callers::endpoints::SERVICE_LOGIN,
+                post(callers::login::endpoint::service_login),
+            )
     }
 
     pub async fn app() -> Router {
@@ -154,6 +158,25 @@ mod tests {
         })
     }
 
+    pub mod requests {
+        use tower::ServiceExt; // for `call`, `oneshot`, and `ready`
+
+        pub async fn register(
+            app: &axum::Router,
+            usr: &icarus_auth::callers::register::request::Request,
+        ) -> Result<axum::response::Response, std::convert::Infallible> {
+            let payload = super::get_test_register_payload(&usr);
+            let req = axum::http::Request::builder()
+                .method(axum::http::Method::POST)
+                .uri(crate::callers::endpoints::REGISTER)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(axum::body::Body::from(payload.to_string()))
+                .unwrap();
+
+            app.clone().oneshot(req).await
+        }
+    }
+
     #[tokio::test]
     async fn test_hello_world() {
         let app = init::app().await;
@@ -198,18 +221,8 @@ mod tests {
         let app = init::routes().await.layer(axum::Extension(pool));
 
         let usr = get_test_register_request();
-        let payload = get_test_register_payload(&usr);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(axum::http::Method::POST)
-                    .uri(callers::endpoints::REGISTER)
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(payload.to_string()))
-                    .unwrap(),
-            )
-            .await;
+        let response = requests::register(&app, &usr).await;
 
         match response {
             Ok(resp) => {
@@ -265,19 +278,8 @@ mod tests {
         let app = init::routes().await.layer(axum::Extension(pool));
 
         let usr = get_test_register_request();
-        let payload = get_test_register_payload(&usr);
 
-        let response = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method(axum::http::Method::POST)
-                    .uri(callers::endpoints::REGISTER)
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(payload.to_string()))
-                    .unwrap(),
-            )
-            .await;
+        let response = requests::register(&app, &usr).await;
 
         match response {
             Ok(resp) => {
@@ -338,6 +340,60 @@ mod tests {
                 assert!(false, "Error: {:?}", err.to_string());
             }
         };
+
+        let _ = db_mgr::drop_database(&tm_pool, &db_name).await;
+    }
+
+    #[tokio::test]
+    async fn test_service_login_user() {
+        let tm_pool = db_mgr::get_pool().await.unwrap();
+
+        let db_name = db_mgr::generate_db_name().await;
+
+        match db_mgr::create_database(&tm_pool, &db_name).await {
+            Ok(_) => {
+                println!("Success");
+            }
+            Err(e) => {
+                assert!(false, "Error: {:?}", e.to_string());
+            }
+        }
+
+        let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
+
+        icarus_auth::db::migrations(&pool).await;
+
+        let app = init::routes().await.layer(axum::Extension(pool));
+        let passphrase =
+            String::from("iUOo1fxshf3y1tUGn1yU8l9raPApHCdinW0VdCHdRFEjqhR3Bf02aZzsKbLtaDFH");
+        let payload = serde_json::json!({
+            "passphrase": passphrase
+        });
+
+        match app
+            .oneshot(
+                Request::builder()
+                    .method(axum::http::Method::POST)
+                    .uri(callers::endpoints::SERVICE_LOGIN)
+                    .header(axum::http::header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .unwrap(),
+            )
+            .await
+        {
+            Ok(response) => {
+                assert_eq!(StatusCode::OK, response.status(), "Status is not right");
+                let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+                    .await
+                    .unwrap();
+                let parsed_body: callers::login::response::service_login::Response =
+                    serde_json::from_slice(&body).unwrap();
+                let _login_result = &parsed_body.data[0];
+            }
+            Err(err) => {
+                assert!(false, "Error: {err:?}");
+            }
+        }
 
         let _ = db_mgr::drop_database(&tm_pool, &db_name).await;
     }

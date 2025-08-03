@@ -728,7 +728,7 @@ dependencies = [
 
 [[package]]
 name = "icarus_auth"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "argon2",
  "axum",
@@ -752,8 +752,8 @@ dependencies = [
 
 [[package]]
 name = "icarus_envy"
-version = "0.3.0"
-source = "git+ssh://git@git.kundeng.us/phoenix/icarus_envy.git?tag=v0.3.0-devel-d73fba9899-006#d73fba9899372b0655a90cb426645930135152da"
+version = "0.3.1"
+source = "git+ssh://git@git.kundeng.us/phoenix/icarus_envy.git?tag=v0.3.1-main-3cd42dab6b-006#3cd42dab6b2503609883f5f57ad3508755c34a2e"
 dependencies = [
  "const_format",
  "dotenvy",

@@ -7,4 +7,5 @@ pub mod endpoints {
     pub const REGISTER: &str = "/api/v2/register";
     pub const DBTEST: &str = "/api/v2/test/db";
     pub const LOGIN: &str = "/api/v2/login";
+    pub const SERVICE_LOGIN: &str = "/api/v2/service/login";
 }
