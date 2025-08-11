@@ -223,4 +223,28 @@ pub mod service {
             Err(err) => Err(err),
         }
     }
+
+    pub async fn get_passphrase(
+        pool: &sqlx::PgPool,
+        id: &uuid::Uuid,
+    ) -> Result<(uuid::Uuid, String, time::OffsetDateTime), sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            SELECT * FROM "passphrase" WHERE id = $1;
+            "#,
+        )
+        .bind(id)
+        .fetch_one(pool)
+        .await;
+
+        match result {
+            Ok(row) => {
+                let returned_id: uuid::Uuid = row.try_get("id")?;
+                let passphrase: String = row.try_get("passphrase")?;
+                let date_created: time::OffsetDateTime = row.try_get("date_created")?;
+                Ok((returned_id, passphrase, date_created))
+            }
+            Err(err) => Err(err),
+        }
+    }
 }

@@ -728,7 +728,7 @@ dependencies = [
 
 [[package]]
 name = "icarus_auth"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "argon2",
  "axum",
@@ -761,8 +761,8 @@ dependencies = [
 
 [[package]]
 name = "icarus_models"
-version = "0.5.4"
-source = "git+ssh://git@git.kundeng.us/phoenix/icarus_models.git?tag=v0.5.4-devel-1e95822b5a-111#1e95822b5a349bd73cc501d921052f289105ec55"
+version = "0.5.5"
+source = "git+ssh://git@git.kundeng.us/phoenix/icarus_models.git?tag=v0.5.5-devel-bd793db08e-111#bd793db08e06b256ffecd9f4528e55e3026fede7"
 dependencies = [
  "josekit",
  "rand 0.9.1",

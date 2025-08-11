@@ -45,6 +45,10 @@ mod init {
                 callers::endpoints::SERVICE_LOGIN,
                 post(callers::login::endpoint::service_login),
             )
+            .route(
+                callers::endpoints::REFRESH_TOKEN,
+                post(callers::login::endpoint::refresh_token),
+            )
     }
 
     pub async fn app() -> Router {
@@ -389,6 +393,73 @@ mod tests {
                 let parsed_body: callers::login::response::service_login::Response =
                     serde_json::from_slice(&body).unwrap();
                 let _login_result = &parsed_body.data[0];
+            }
+            Err(err) => {
+                assert!(false, "Error: {err:?}");
+            }
+        }
+
+        let _ = db_mgr::drop_database(&tm_pool, &db_name).await;
+    }
+
+    #[tokio::test]
+    async fn test_refresh_token() {
+        let tm_pool = db_mgr::get_pool().await.unwrap();
+
+        let db_name = db_mgr::generate_db_name().await;
+
+        match db_mgr::create_database(&tm_pool, &db_name).await {
+            Ok(_) => {
+                println!("Success");
+            }
+            Err(e) => {
+                assert!(false, "Error: {:?}", e.to_string());
+            }
+        }
+
+        let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
+
+        icarus_auth::db::migrations(&pool).await;
+
+        let app = init::routes().await.layer(axum::Extension(pool));
+        let id = uuid::Uuid::parse_str("22f9c775-cce9-457a-a147-9dafbb801f61").unwrap();
+        let key = icarus_envy::environment::get_secret_key().await;
+
+        match icarus_auth::token_stuff::create_service_token(&key, &id) {
+            Ok((token, _expire)) => {
+                let payload = serde_json::json!({
+                    "access_token": token
+                });
+
+                match app
+                    .oneshot(
+                        Request::builder()
+                            .method(axum::http::Method::POST)
+                            .uri(callers::endpoints::REFRESH_TOKEN)
+                            .header(axum::http::header::CONTENT_TYPE, "application/json")
+                            .body(Body::from(payload.to_string()))
+                            .unwrap(),
+                    )
+                    .await
+                {
+                    Ok(response) => {
+                        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+                            .await
+                            .unwrap();
+                        let parsed_body: callers::login::response::service_login::Response =
+                            serde_json::from_slice(&body).unwrap();
+                        let login_result = &parsed_body.data[0];
+
+                        assert_eq!(
+                            id, login_result.id,
+                            "The Id from the response does not match {id:?} {:?}",
+                            login_result.id
+                        );
+                    }
+                    Err(err) => {
+                        assert!(false, "Error: {err:?}");
+                    }
+                }
             }
             Err(err) => {
                 assert!(false, "Error: {err:?}");
