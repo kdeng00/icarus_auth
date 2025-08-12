@@ -1,22 +1,15 @@
 use josekit::{
     self,
-    jws::{JwsHeader, alg::hmac::HmacJwsAlgorithm::Hs256},
-    jwt::{self, JwtPayload},
+    jws::alg::hmac::HmacJwsAlgorithm::Hs256,
+    jwt::{self},
 };
 
 use time;
 
-pub const TOKENTYPE: &str = "JWT";
 pub const KEY_ENV: &str = "SECRET_KEY";
 pub const MESSAGE: &str = "Something random";
 pub const ISSUER: &str = "icarus_auth";
 pub const AUDIENCE: &str = "icarus";
-
-pub fn get_key() -> Result<String, dotenvy::Error> {
-    dotenvy::dotenv().ok();
-    let key = std::env::var(KEY_ENV).expect("SECRET_KEY_NOT_FOUND");
-    Ok(key)
-}
 
 pub fn get_issued() -> time::Result<time::OffsetDateTime> {
     Ok(time::OffsetDateTime::now_utc())
@@ -27,63 +20,113 @@ pub fn get_expiration(issued: &time::OffsetDateTime) -> Result<time::OffsetDateT
     Ok(*issued + duration_expire)
 }
 
-mod util {
-    pub fn time_to_std_time(
-        provided_time: &time::OffsetDateTime,
-    ) -> Result<std::time::SystemTime, std::time::SystemTimeError> {
-        let converted = std::time::SystemTime::from(*provided_time);
-        Ok(converted)
-    }
+pub fn create_token(
+    provided_key: &String,
+    id: &uuid::Uuid,
+) -> Result<(String, i64), josekit::JoseError> {
+    let resource = icarus_models::token::TokenResource {
+        message: String::from(MESSAGE),
+        issuer: String::from(ISSUER),
+        audiences: vec![String::from(AUDIENCE)],
+        id: *id,
+    };
+    icarus_models::token::create_token(provided_key, &resource, time::Duration::hours(4))
 }
 
-pub fn create_token(provided_key: &String) -> Result<(String, i64), josekit::JoseError> {
-    let mut header = JwsHeader::new();
-    header.set_token_type(TOKENTYPE);
+pub fn create_service_token(
+    provided: &String,
+    id: &uuid::Uuid,
+) -> Result<(String, i64), josekit::JoseError> {
+    let resource = icarus_models::token::TokenResource {
+        message: String::from(SERVICE_SUBJECT),
+        issuer: String::from(ISSUER),
+        audiences: vec![String::from(AUDIENCE)],
+        id: *id,
+    };
+    icarus_models::token::create_token(provided, &resource, time::Duration::hours(1))
+}
 
-    let mut payload = JwtPayload::new();
-    payload.set_subject(MESSAGE);
-    payload.set_issuer(ISSUER);
-    payload.set_audience(vec![AUDIENCE]);
-    match get_issued() {
-        Ok(issued) => {
-            let expire = get_expiration(&issued).unwrap();
-            payload.set_issued_at(&util::time_to_std_time(&issued).unwrap());
-            payload.set_expires_at(&util::time_to_std_time(&expire).unwrap());
-
-            let key: String = if provided_key.is_empty() {
-                get_key().unwrap()
-            } else {
-                provided_key.to_owned()
-            };
-
-            let signer = Hs256.signer_from_bytes(key.as_bytes()).unwrap();
-            Ok((
-                josekit::jwt::encode_with_signer(&payload, &header, &signer).unwrap(),
-                (expire - time::OffsetDateTime::UNIX_EPOCH).whole_seconds(),
-            ))
-        }
-        Err(e) => Err(josekit::JoseError::InvalidClaim(e.into())),
-    }
+pub fn create_service_refresh_token(
+    key: &String,
+    id: &uuid::Uuid,
+) -> Result<(String, i64), josekit::JoseError> {
+    let resource = icarus_models::token::TokenResource {
+        message: String::from(SERVICE_SUBJECT),
+        issuer: String::from(ISSUER),
+        audiences: vec![String::from(AUDIENCE)],
+        id: *id,
+    };
+    icarus_models::token::create_token(key, &resource, time::Duration::hours(4))
 }
 
 pub fn verify_token(key: &String, token: &String) -> bool {
-    let ver = Hs256.verifier_from_bytes(key.as_bytes()).unwrap();
-    let (payload, _header) = jwt::decode_with_verifier(token, &ver).unwrap();
-    match payload.subject() {
-        Some(_sub) => true,
-        None => false,
+    match get_payload(key, token) {
+        Ok((payload, _header)) => match payload.subject() {
+            Some(_sub) => true,
+            None => false,
+        },
+        Err(_err) => false,
     }
+}
+
+pub fn extract_id_from_token(key: &String, token: &String) -> Result<uuid::Uuid, std::io::Error> {
+    match get_payload(key, token) {
+        Ok((payload, _header)) => match payload.claim("id") {
+            Some(id) => match uuid::Uuid::parse_str(id.as_str().unwrap()) {
+                Ok(extracted) => Ok(extracted),
+                Err(err) => Err(std::io::Error::other(err.to_string())),
+            },
+            None => Err(std::io::Error::other("No claim found")),
+        },
+        Err(err) => Err(std::io::Error::other(err.to_string())),
+    }
+}
+
+pub const APP_TOKEN_TYPE: &str = "Icarus_App";
+pub const APP_SUBJECT: &str = "Something random";
+pub const SERVICE_TOKEN_TYPE: &str = "Icarus_Service";
+pub const SERVICE_SUBJECT: &str = "Service random";
+
+pub fn get_token_type(key: &String, token: &String) -> Result<String, std::io::Error> {
+    match get_payload(key, token) {
+        Ok((payload, _header)) => match payload.subject() {
+            Some(subject) => {
+                if subject == APP_SUBJECT {
+                    Ok(String::from(APP_TOKEN_TYPE))
+                } else if subject == SERVICE_SUBJECT {
+                    Ok(String::from(SERVICE_TOKEN_TYPE))
+                } else {
+                    Err(std::io::Error::other(String::from("Invalid subject")))
+                }
+            }
+            None => Err(std::io::Error::other(String::from("Invalid payload"))),
+        },
+        Err(err) => Err(std::io::Error::other(err.to_string())),
+    }
+}
+
+pub fn is_token_type_valid(token_type: &String) -> bool {
+    token_type == SERVICE_TOKEN_TYPE
+}
+
+fn get_payload(
+    key: &String,
+    token: &String,
+) -> Result<(josekit::jwt::JwtPayload, josekit::jws::JwsHeader), josekit::JoseError> {
+    let ver = Hs256.verifier_from_bytes(key.as_bytes()).unwrap();
+    jwt::decode_with_verifier(token, &ver)
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
     fn test_tokenize() {
-        let special_key = get_key().unwrap();
-        match create_token(&special_key) {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let special_key = rt.block_on(icarus_envy::environment::get_secret_key());
+        let id = uuid::Uuid::new_v4();
+        match create_token(&special_key, &id) {
             Ok((token, _duration)) => {
                 let result = verify_token(&special_key, &token);
                 assert!(result, "Token not verified");

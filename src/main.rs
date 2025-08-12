@@ -41,6 +41,14 @@ mod init {
                 callers::endpoints::LOGIN,
                 post(callers::login::endpoint::login),
             )
+            .route(
+                callers::endpoints::SERVICE_LOGIN,
+                post(callers::login::endpoint::service_login),
+            )
+            .route(
+                callers::endpoints::REFRESH_TOKEN,
+                post(callers::login::endpoint::refresh_token),
+            )
     }
 
     pub async fn app() -> Router {
@@ -69,24 +77,23 @@ mod tests {
     mod db_mgr {
         use std::str::FromStr;
 
-        use icarus_auth::keys;
-
         pub const LIMIT: usize = 6;
 
         pub async fn get_pool() -> Result<sqlx::PgPool, sqlx::Error> {
-            let tm_db_url = std::env::var(keys::DBURL).expect("DATABASE_URL must be present");
+            let tm_db_url = icarus_envy::environment::get_db_url().await;
             let tm_options = sqlx::postgres::PgConnectOptions::from_str(&tm_db_url).unwrap();
             sqlx::PgPool::connect_with(tm_options).await
         }
 
         pub async fn generate_db_name() -> String {
-            let db_name =
-                get_database_name().unwrap() + &"_" + &uuid::Uuid::new_v4().to_string()[..LIMIT];
+            let db_name = get_database_name().await.unwrap()
+                + &"_"
+                + &uuid::Uuid::new_v4().to_string()[..LIMIT];
             db_name
         }
 
         pub async fn connect_to_db(db_name: &str) -> Result<sqlx::PgPool, sqlx::Error> {
-            let db_url = std::env::var(keys::DBURL).expect("DATABASE_URL must be set for tests");
+            let db_url = icarus_envy::environment::get_db_url().await;
             let options = sqlx::postgres::PgConnectOptions::from_str(&db_url)?.database(db_name);
             sqlx::PgPool::connect_with(options).await
         }
@@ -112,29 +119,21 @@ mod tests {
             Ok(())
         }
 
-        pub fn get_database_name() -> Result<String, Box<dyn std::error::Error>> {
-            dotenvy::dotenv().ok(); // Load .env file if it exists
+        pub async fn get_database_name() -> Result<String, Box<dyn std::error::Error>> {
+            let database_url = icarus_envy::environment::get_db_url().await;
 
-            match std::env::var(keys::DBURL) {
-                Ok(database_url) => {
-                    let parsed_url = url::Url::parse(&database_url)?;
-                    if parsed_url.scheme() == "postgres" || parsed_url.scheme() == "postgresql" {
-                        match parsed_url
-                            .path_segments()
-                            .and_then(|segments| segments.last().map(|s| s.to_string()))
-                        {
-                            Some(sss) => Ok(sss),
-                            None => Err("Error parsing".into()),
-                        }
-                    } else {
-                        // Handle other database types if needed
-                        Err("Error parsing".into())
-                    }
+            let parsed_url = url::Url::parse(&database_url)?;
+            if parsed_url.scheme() == "postgres" || parsed_url.scheme() == "postgresql" {
+                match parsed_url
+                    .path_segments()
+                    .and_then(|segments| segments.last().map(|s| s.to_string()))
+                {
+                    Some(sss) => Ok(sss),
+                    None => Err("Error parsing".into()),
                 }
-                Err(_) => {
-                    // DATABASE_URL environment variable not found
-                    Err("Error parsing".into())
-                }
+            } else {
+                // Handle other database types if needed
+                Err("Error parsing".into())
             }
         }
     }
@@ -161,6 +160,25 @@ mod tests {
             "firstname": &usr.firstname,
             "lastname": &usr.lastname,
         })
+    }
+
+    pub mod requests {
+        use tower::ServiceExt; // for `call`, `oneshot`, and `ready`
+
+        pub async fn register(
+            app: &axum::Router,
+            usr: &icarus_auth::callers::register::request::Request,
+        ) -> Result<axum::response::Response, std::convert::Infallible> {
+            let payload = super::get_test_register_payload(&usr);
+            let req = axum::http::Request::builder()
+                .method(axum::http::Method::POST)
+                .uri(crate::callers::endpoints::REGISTER)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(axum::body::Body::from(payload.to_string()))
+                .unwrap();
+
+            app.clone().oneshot(req).await
+        }
     }
 
     #[tokio::test]
@@ -207,18 +225,8 @@ mod tests {
         let app = init::routes().await.layer(axum::Extension(pool));
 
         let usr = get_test_register_request();
-        let payload = get_test_register_payload(&usr);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(axum::http::Method::POST)
-                    .uri(callers::endpoints::REGISTER)
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(payload.to_string()))
-                    .unwrap(),
-            )
-            .await;
+        let response = requests::register(&app, &usr).await;
 
         match response {
             Ok(resp) => {
@@ -274,19 +282,8 @@ mod tests {
         let app = init::routes().await.layer(axum::Extension(pool));
 
         let usr = get_test_register_request();
-        let payload = get_test_register_payload(&usr);
 
-        let response = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method(axum::http::Method::POST)
-                    .uri(callers::endpoints::REGISTER)
-                    .header(axum::http::header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(payload.to_string()))
-                    .unwrap(),
-            )
-            .await;
+        let response = requests::register(&app, &usr).await;
 
         match response {
             Ok(resp) => {
@@ -347,6 +344,127 @@ mod tests {
                 assert!(false, "Error: {:?}", err.to_string());
             }
         };
+
+        let _ = db_mgr::drop_database(&tm_pool, &db_name).await;
+    }
+
+    #[tokio::test]
+    async fn test_service_login_user() {
+        let tm_pool = db_mgr::get_pool().await.unwrap();
+
+        let db_name = db_mgr::generate_db_name().await;
+
+        match db_mgr::create_database(&tm_pool, &db_name).await {
+            Ok(_) => {
+                println!("Success");
+            }
+            Err(e) => {
+                assert!(false, "Error: {:?}", e.to_string());
+            }
+        }
+
+        let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
+
+        icarus_auth::db::migrations(&pool).await;
+
+        let app = init::routes().await.layer(axum::Extension(pool));
+        let passphrase =
+            String::from("iUOo1fxshf3y1tUGn1yU8l9raPApHCdinW0VdCHdRFEjqhR3Bf02aZzsKbLtaDFH");
+        let payload = serde_json::json!({
+            "passphrase": passphrase
+        });
+
+        match app
+            .oneshot(
+                Request::builder()
+                    .method(axum::http::Method::POST)
+                    .uri(callers::endpoints::SERVICE_LOGIN)
+                    .header(axum::http::header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .unwrap(),
+            )
+            .await
+        {
+            Ok(response) => {
+                assert_eq!(StatusCode::OK, response.status(), "Status is not right");
+                let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+                    .await
+                    .unwrap();
+                let parsed_body: callers::login::response::service_login::Response =
+                    serde_json::from_slice(&body).unwrap();
+                let _login_result = &parsed_body.data[0];
+            }
+            Err(err) => {
+                assert!(false, "Error: {err:?}");
+            }
+        }
+
+        let _ = db_mgr::drop_database(&tm_pool, &db_name).await;
+    }
+
+    #[tokio::test]
+    async fn test_refresh_token() {
+        let tm_pool = db_mgr::get_pool().await.unwrap();
+
+        let db_name = db_mgr::generate_db_name().await;
+
+        match db_mgr::create_database(&tm_pool, &db_name).await {
+            Ok(_) => {
+                println!("Success");
+            }
+            Err(e) => {
+                assert!(false, "Error: {:?}", e.to_string());
+            }
+        }
+
+        let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
+
+        icarus_auth::db::migrations(&pool).await;
+
+        let app = init::routes().await.layer(axum::Extension(pool));
+        let id = uuid::Uuid::parse_str("22f9c775-cce9-457a-a147-9dafbb801f61").unwrap();
+        let key = icarus_envy::environment::get_secret_key().await;
+
+        match icarus_auth::token_stuff::create_service_token(&key, &id) {
+            Ok((token, _expire)) => {
+                let payload = serde_json::json!({
+                    "access_token": token
+                });
+
+                match app
+                    .oneshot(
+                        Request::builder()
+                            .method(axum::http::Method::POST)
+                            .uri(callers::endpoints::REFRESH_TOKEN)
+                            .header(axum::http::header::CONTENT_TYPE, "application/json")
+                            .body(Body::from(payload.to_string()))
+                            .unwrap(),
+                    )
+                    .await
+                {
+                    Ok(response) => {
+                        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+                            .await
+                            .unwrap();
+                        let parsed_body: callers::login::response::service_login::Response =
+                            serde_json::from_slice(&body).unwrap();
+                        let login_result = &parsed_body.data[0];
+
+                        assert_eq!(
+                            id, login_result.id,
+                            "The Id from the response does not match {id:?} {:?}",
+                            login_result.id
+                        );
+                    }
+                    Err(err) => {
+                        assert!(false, "Error: {err:?}");
+                    }
+                }
+            }
+            Err(err) => {
+                assert!(false, "Error: {err:?}");
+            }
+        }
 
         let _ = db_mgr::drop_database(&tm_pool, &db_name).await;
     }
