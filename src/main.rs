@@ -19,8 +19,31 @@ mod init {
         Router,
         routing::{get, post},
     };
+    use utoipa::OpenApi;
 
     use crate::callers;
+    use callers::common as common_callers;
+    use callers::login as login_caller;
+    use callers::register as register_caller;
+    use login_caller::endpoint as login_endpoints;
+    use login_caller::response as login_responses;
+    use register_caller::response as register_responses;
+
+    #[derive(utoipa::OpenApi)]
+    #[openapi(
+        paths(
+            common_callers::endpoint::db_ping, common_callers::endpoint::root,
+            register_caller::register_user,
+            login_endpoints::login, login_endpoints::service_login, login_endpoints::refresh_token
+            ),
+        components(schemas(common_callers::response::TestResult,
+                register_responses::Response,
+            login_responses::Response, login_responses::service_login::Response, login_responses::refresh_token::Response)),
+        tags(
+            (name = "Icarus Auth API", description = "Auth API for Icarus API")
+            )
+    )]
+    struct ApiDoc;
 
     pub async fn routes() -> Router {
         // build our application with a route
@@ -58,7 +81,13 @@ mod init {
 
         icarus_auth::db::migrations(&pool).await;
 
-        routes().await.layer(axum::Extension(pool))
+        routes()
+            .await
+            .merge(
+                utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
+                    .url("/api-docs/openapi.json", ApiDoc::openapi()),
+            )
+            .layer(axum::Extension(pool))
     }
 }
 

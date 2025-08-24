@@ -1,21 +1,21 @@
 pub mod request {
     use serde::{Deserialize, Serialize};
 
-    #[derive(Default, Deserialize, Serialize)]
+    #[derive(Default, Deserialize, Serialize, utoipa::ToSchema)]
     pub struct Request {
         pub username: String,
         pub password: String,
     }
 
     pub mod service_login {
-        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        #[derive(Debug, serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
         pub struct Request {
             pub passphrase: String,
         }
     }
 
     pub mod refresh_token {
-        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        #[derive(Debug, serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
         pub struct Request {
             pub access_token: String,
         }
@@ -25,14 +25,14 @@ pub mod request {
 pub mod response {
     use serde::{Deserialize, Serialize};
 
-    #[derive(Default, Deserialize, Serialize)]
+    #[derive(Default, Deserialize, Serialize, utoipa::ToSchema)]
     pub struct Response {
         pub message: String,
         pub data: Vec<icarus_models::login_result::LoginResult>,
     }
 
     pub mod service_login {
-        #[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+        #[derive(Debug, Default, serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
         pub struct Response {
             pub message: String,
             pub data: Vec<icarus_models::login_result::LoginResult>,
@@ -40,7 +40,7 @@ pub mod response {
     }
 
     pub mod refresh_token {
-        #[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+        #[derive(Debug, Default, serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
         pub struct Response {
             pub message: String,
             pub data: Vec<icarus_models::login_result::LoginResult>,
@@ -48,6 +48,7 @@ pub mod response {
     }
 }
 
+/// Module for login endpoints
 pub mod endpoint {
     use axum::{Json, http::StatusCode};
 
@@ -72,6 +73,20 @@ pub mod endpoint {
         )
     }
 
+    /// Endpoint to login
+    #[utoipa::path(
+        post,
+        path = super::super::endpoints::LOGIN,
+        request_body(
+            content = request::Request,
+            description = "Data required to login",
+            content_type = "application/json"
+        ),
+        responses(
+            (status = 200, description = "Successfully logged in", body = response::Response),
+            (status = 404, description = "Could not login with credentials", body = response::Response)
+        )
+    )]
     pub async fn login(
         axum::Extension(pool): axum::Extension<sqlx::PgPool>,
         Json(payload): Json<request::Request>,
@@ -115,6 +130,20 @@ pub mod endpoint {
         }
     }
 
+    /// Endpoint to login as a service user
+    #[utoipa::path(
+        post,
+        path = super::super::endpoints::SERVICE_LOGIN,
+        request_body(
+            content = request::service_login::Request,
+            description = "Data required to login as a service user",
+            content_type = "application/json"
+        ),
+        responses(
+            (status = 200, description = "Login successful", body = response::Response),
+            (status = 400, description = "Error logging in with credentials", body = response::Response)
+        )
+    )]
     pub async fn service_login(
         axum::Extension(pool): axum::Extension<sqlx::PgPool>,
         axum::Json(payload): axum::Json<request::service_login::Request>,
@@ -154,6 +183,22 @@ pub mod endpoint {
         }
     }
 
+    /// Endpoint to retrieve a refresh token
+    #[utoipa::path(
+        post,
+        path = super::super::endpoints::REFRESH_TOKEN,
+        request_body(
+            content = request::refresh_token::Request,
+            description = "Data required to retrieve a refresh token",
+            content_type = "application/json"
+        ),
+        responses(
+            (status = 200, description = "Refresh token generated", body = response::Response),
+            (status = 400, description = "Error verifying token", body = response::Response),
+            (status = 404, description = "Could not validate token", body = response::Response),
+            (status = 500, description = "Error extracting token", body = response::Response)
+        )
+    )]
     pub async fn refresh_token(
         axum::Extension(pool): axum::Extension<sqlx::PgPool>,
         axum::Json(payload): axum::Json<request::refresh_token::Request>,

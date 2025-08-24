@@ -6,7 +6,7 @@ use crate::repo;
 pub mod request {
     use serde::{Deserialize, Serialize};
 
-    #[derive(Default, Deserialize, Serialize)]
+    #[derive(Default, Deserialize, Serialize, utoipa::ToSchema)]
     pub struct Request {
         #[serde(skip_serializing_if = "String::is_empty")]
         pub username: String,
@@ -26,13 +26,28 @@ pub mod request {
 pub mod response {
     use serde::{Deserialize, Serialize};
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Deserialize, Serialize, utoipa::ToSchema)]
     pub struct Response {
         pub message: String,
         pub data: Vec<icarus_models::user::User>,
     }
 }
 
+/// Endpoint to register a user
+#[utoipa::path(
+    post,
+    path = super::endpoints::REGISTER,
+    request_body(
+        content = request::Request,
+        description = "Data required to register",
+        content_type = "application/json"
+    ),
+    responses(
+        (status = 201, description = "User created", body = response::Response),
+        (status = 404, description = "User already exists", body = response::Response),
+        (status = 400, description = "Issue creating user", body = response::Response)
+    )
+)]
 pub async fn register_user(
     axum::Extension(pool): axum::Extension<sqlx::PgPool>,
     Json(payload): Json<request::Request>,
