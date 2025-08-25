@@ -1,9 +1,12 @@
+A auth web API services for the Icarus project.
 
 
 # Getting Started
-Copy the `.env.sample` file to `.env` and ensure that the variables are populated. This project
-can be used with regular hosting or with docker. For the sake of getting up to speed quickly,
-Docker will be covered. Make sure docker is running and your ssh identity has been loaded.
+The easiest way to get started is through docker. This assumes that docker is already installed
+on your system. Copy the `.env.docker.sample` as `.env`. Most of the data in the env file doesn't 
+need to be modified. The `SECRET_KEY` variable should be changed since it will be used for token
+generation. The `SECRET_PASSPHASE` should also be changed when in production mode, but make sure
+the respective `passphrase` database table record exists.
 
 Build image
 ```
@@ -24,3 +27,6 @@ Pruning
 ```
 docker system prune -a
 ```
+
+To view the OpenAPI spec, run the project and access `/swagger-ui`. If running through docker,
+the url would be something like `http://localhost:8000/swagger-ui`.
