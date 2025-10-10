@@ -124,7 +124,9 @@ mod tests {
     #[test]
     fn test_tokenize() {
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let special_key = rt.block_on(icarus_envy::environment::get_secret_key());
+        let special_key = rt
+            .block_on(icarus_envy::environment::get_secret_key())
+            .value;
         let id = uuid::Uuid::new_v4();
         match create_token(&special_key, &id) {
             Ok((token, _duration)) => {
