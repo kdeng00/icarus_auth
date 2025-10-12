@@ -15,10 +15,10 @@ jobs:
     name: Check
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: 1.90.0
       - run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
@@ -50,10 +50,10 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: 1.90.0
       # --- Add this step for explicit verification ---
       - name: Verify Docker Environment
         run: |
@@ -91,10 +91,10 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: 1.90.0
       - run: rustup component add rustfmt
       - run: |
           mkdir -p ~/.ssh
@@ -110,10 +110,10 @@ jobs:
     name: Clippy
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: 1.90.0
       - run: rustup component add clippy
       - run: |
           mkdir -p ~/.ssh
@@ -129,10 +129,10 @@ jobs:
     name: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: 1.90.0
       - run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key
