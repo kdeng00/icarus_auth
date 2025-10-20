@@ -94,7 +94,7 @@ pub mod user {
     pub async fn insert(
         pool: &sqlx::PgPool,
         user: &icarus_models::user::User,
-    ) -> Result<uuid::Uuid, sqlx::Error> {
+    ) -> Result<(uuid::Uuid, std::option::Option<time::OffsetDateTime>), sqlx::Error> {
         let row = sqlx::query(
             r#"
                 INSERT INTO "user" (username, password, email, phone, firstname, lastname, email_verified, status, salt_id) 
@@ -124,10 +124,10 @@ pub mod user {
                 .map_err(|_e| sqlx::Error::RowNotFound)?,
         };
 
-        if !result.id.is_nil() {
-            Ok(result.id)
-        } else {
+        if result.id.is_nil() && result.date_created.is_none() {
             Err(sqlx::Error::RowNotFound)
+        } else {
+            Ok((result.id, result.date_created))
         }
     }
 }

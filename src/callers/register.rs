@@ -53,7 +53,6 @@ pub async fn register_user(
     Json(payload): Json<request::Request>,
 ) -> (StatusCode, Json<response::Response>) {
     let mut user = icarus_models::user::User {
-        id: uuid::Uuid::nil(),
         username: payload.username.clone(),
         password: payload.password.clone(),
         email: payload.email.clone(),
@@ -62,19 +61,17 @@ pub async fn register_user(
         lastname: payload.lastname.clone(),
         status: String::from("Active"),
         email_verified: true,
-        date_created: Some(time::OffsetDateTime::now_utc()),
-        last_login: None,
-        salt_id: uuid::Uuid::nil(),
+        ..Default::default()
     };
 
     match repo::user::exists(&pool, &user.username).await {
         Ok(res) => {
             if res {
                 (
-                    StatusCode::NOT_FOUND,
+                    StatusCode::BAD_REQUEST,
                     Json(response::Response {
                         message: String::from("Error"),
-                        data: vec![user],
+                        data: Vec::new(),
                     }),
                 )
             } else {
@@ -89,8 +86,9 @@ pub async fn register_user(
                 user.password = hashed_password;
 
                 match repo::user::insert(&pool, &user).await {
-                    Ok(id) => {
+                    Ok((id, date_created)) => {
                         user.id = id;
+                        user.date_created = date_created;
                         (
                             StatusCode::CREATED,
                             Json(response::Response {
