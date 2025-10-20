@@ -1,5 +1,9 @@
-use icarus_auth::callers;
-use icarus_auth::config;
+pub mod callers;
+pub mod config;
+pub mod db;
+pub mod hashing;
+pub mod repo;
+pub mod token_stuff;
 
 #[tokio::main]
 async fn main() {
@@ -21,7 +25,7 @@ mod init {
     };
     use utoipa::OpenApi;
 
-    use crate::callers;
+    use super::callers;
     use callers::common as common_callers;
     use callers::login as login_caller;
     use callers::register as register_caller;
@@ -124,11 +128,11 @@ mod init {
     }
 
     pub async fn app() -> Router {
-        let pool = icarus_auth::db::create_pool()
+        let pool = super::db::init::create_pool()
             .await
             .expect("Failed to create pool");
 
-        icarus_auth::db::migrations(&pool).await;
+        super::db::init::migrations(&pool).await;
 
         routes()
             .await
@@ -216,8 +220,8 @@ mod tests {
         }
     }
 
-    fn get_test_register_request() -> icarus_auth::callers::register::request::Request {
-        icarus_auth::callers::register::request::Request {
+    fn get_test_register_request() -> callers::register::request::Request {
+        callers::register::request::Request {
             username: String::from("somethingsss"),
             password: String::from("Raindown!"),
             email: String::from("dev@null.com"),
@@ -227,9 +231,7 @@ mod tests {
         }
     }
 
-    fn get_test_register_payload(
-        usr: &icarus_auth::callers::register::request::Request,
-    ) -> serde_json::Value {
+    fn get_test_register_payload(usr: &callers::register::request::Request) -> serde_json::Value {
         json!({
             "username": &usr.username,
             "password": &usr.password,
@@ -245,7 +247,7 @@ mod tests {
 
         pub async fn register(
             app: &axum::Router,
-            usr: &icarus_auth::callers::register::request::Request,
+            usr: &super::callers::register::request::Request,
         ) -> Result<axum::response::Response, std::convert::Infallible> {
             let payload = super::get_test_register_payload(&usr);
             let req = axum::http::Request::builder()
@@ -298,7 +300,7 @@ mod tests {
 
         let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
 
-        icarus_auth::db::migrations(&pool).await;
+        db::init::migrations(&pool).await;
 
         let app = init::routes().await.layer(axum::Extension(pool));
 
@@ -355,7 +357,7 @@ mod tests {
 
         let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
 
-        icarus_auth::db::migrations(&pool).await;
+        db::init::migrations(&pool).await;
 
         let app = init::routes().await.layer(axum::Extension(pool));
 
@@ -443,7 +445,7 @@ mod tests {
 
         let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
 
-        icarus_auth::db::migrations(&pool).await;
+        db::init::migrations(&pool).await;
 
         let app = init::routes().await.layer(axum::Extension(pool));
         let passphrase =
@@ -497,13 +499,13 @@ mod tests {
 
         let pool = db_mgr::connect_to_db(&db_name).await.unwrap();
 
-        icarus_auth::db::migrations(&pool).await;
+        db::init::migrations(&pool).await;
 
         let app = init::routes().await.layer(axum::Extension(pool));
         let id = uuid::Uuid::parse_str("22f9c775-cce9-457a-a147-9dafbb801f61").unwrap();
         let key = icarus_envy::environment::get_secret_key().await.value;
 
-        match icarus_auth::token_stuff::create_service_token(&key, &id) {
+        match token_stuff::create_service_token(&key, &id) {
             Ok((token, _expire)) => {
                 let payload = serde_json::json!({
                     "access_token": token
