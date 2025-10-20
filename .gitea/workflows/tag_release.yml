@@ -3,7 +3,7 @@ name: Release Tagging
 on:
   push:
     branches:
-      - devel
+      - main
 
 jobs:
   release:
@@ -27,8 +27,10 @@ jobs:
           PROJECT_COMMIT_HASH=$(git rev-parse HEAD | cut -c 1-10)
           BRANCH_REF="${GITHUB_REF}"
           BRANCH_NAME=$(echo "$BRANCH_REF" | cut -d '/' -f 3)
-          PROJECT_TAG_RELEASE="v$VERSION-$BRANCH_NAME-$PROJECT_COMMIT_HASH"
-          echo "::set-output name=project_tag_release::$PROJECT_TAG_RELEASE-950"
+          PROJECT_TAG_RELEASE="v$VERSION-$BRANCH_NAME-$PROJECT_COMMIT_HASH-950"
+
+          echo "::set-output name=project_tag_release::$PROJECT_TAG_RELEASE"
+
           echo "Version: $VERSION"
           echo "Hash: $PROJECT_COMMIT_HASH"
           echo "Branch: $BRANCH_NAME"
