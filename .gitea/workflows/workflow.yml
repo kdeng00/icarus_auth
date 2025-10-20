@@ -76,6 +76,7 @@ jobs:
           SECRET_KEY: ${{ secrets.TOKEN_SECRET_KEY }}
           # Make SSH agent available if tests fetch private dependencies
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+          ENABLE_REGISTRATION: 'TRUE'
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.MYREPO_TOKEN }}" > ~/.ssh/icarus_models_deploy_key

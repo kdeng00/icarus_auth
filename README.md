@@ -8,22 +8,26 @@ need to be modified. The `SECRET_KEY` variable should be changed since it will b
 generation. The `SECRET_PASSPHASE` should also be changed when in production mode, but make sure
 the respective `passphrase` database table record exists.
 
-Build image
+To enable or disable registrations, use `TRUE` or `FALSE` for the `ENABLE_REGISTRATION` variable.
+By default it is `TRUE`.
+
+
+### Build image
 ```
 docker compose build
 ```
 
-Start images
+### Start images
 ```
 docker compose up -d --force-recreate
 ```
 
-Bring it down
+### Bring it down
 ```
 docker compose down -v
 ```
 
-Pruning
+### Pruning
 ```
 docker system prune -a
 ```
