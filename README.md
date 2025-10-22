@@ -2,6 +2,13 @@ A auth web API services for the Icarus project.
 
 
 # Getting Started
+Install the `sqlx` tool to use migrations.
+```
+cargo install sqlx-cli
+```
+This will be used to scaffold development for local environments.
+
+
 The easiest way to get started is through docker. This assumes that docker is already installed
 on your system. Copy the `.env.docker.sample` as `.env`. Most of the data in the env file doesn't 
 need to be modified. The `SECRET_KEY` variable should be changed since it will be used for token
@@ -33,4 +40,4 @@ docker system prune -a
 ```
 
 To view the OpenAPI spec, run the project and access `/swagger-ui`. If running through docker,
-the url would be something like `http://localhost:8000/swagger-ui`.
+the url would be something like `http://localhost:8001/swagger-ui`.
