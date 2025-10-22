@@ -59,10 +59,6 @@ pub mod endpoint {
     use super::request;
     use super::response;
 
-    // TODO: At some point, get the username from the DB
-    // Name of service username when returning a login result
-    pub const SERVICE_USERNAME: &str = "service";
-
     async fn not_found(message: &str) -> (StatusCode, Json<response::Response>) {
         (
             StatusCode::NOT_FOUND,
@@ -118,7 +114,7 @@ pub mod endpoint {
                             }),
                         )
                     } else {
-                        return not_found("Could not verify password").await;
+                        return not_found("Could not verify token").await;
                     }
                 } else {
                     return not_found("Error Hashing").await;
@@ -154,7 +150,7 @@ pub mod endpoint {
         let mut response = response::service_login::Response::default();
 
         match repo::service::valid_passphrase(&pool, &payload.passphrase).await {
-            Ok((id, _passphrase, _date_created)) => {
+            Ok((id, username, _date_created)) => {
                 let key = icarus_envy::environment::get_secret_key().await.value;
                 let (token_literal, duration) =
                     token_stuff::create_service_token(&key, &id).unwrap();
@@ -162,7 +158,7 @@ pub mod endpoint {
                 if token_stuff::verify_token(&key, &token_literal) {
                     let login_result = icarus_models::login_result::LoginResult {
                         id,
-                        username: String::from(SERVICE_USERNAME),
+                        username,
                         token: token_literal,
                         token_type: String::from(icarus_models::token::TOKEN_TYPE),
                         expiration: duration,
@@ -216,15 +212,15 @@ pub mod endpoint {
                 // Get passphrase record with id
                 match token_stuff::extract_id_from_token(&key, &payload.access_token) {
                     Ok(id) => match repo::service::get_passphrase(&pool, &id).await {
-                        Ok((returned_id, _, _)) => {
-                            match token_stuff::create_service_refresh_token(&key, &returned_id) {
+                        Ok((username, _, _)) => {
+                            match token_stuff::create_service_refresh_token(&key, &id) {
                                 Ok((access_token, exp_dur)) => {
                                     let login_result = icarus_models::login_result::LoginResult {
-                                        id: returned_id,
+                                        id,
                                         token: access_token,
                                         expiration: exp_dur,
                                         token_type: String::from(icarus_models::token::TOKEN_TYPE),
-                                        username: String::from(SERVICE_USERNAME),
+                                        username,
                                     };
                                     response.message = String::from("Successful");
                                     response.data.push(login_result);

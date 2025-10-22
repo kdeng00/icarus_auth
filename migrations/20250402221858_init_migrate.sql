@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS "salt" (
 
 CREATE TABLE IF NOT EXISTS "passphrase" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT NOT NULL,
     passphrase TEXT NOT NULL,
     date_created TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
