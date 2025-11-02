@@ -64,7 +64,7 @@ COPY --from=builder /usr/src/app/.env .
 COPY --from=builder /usr/src/app/migrations ./migrations
 
 # Expose the port your Axum app listens on (e.g., 3000 or 8000)
-EXPOSE 3000
+EXPOSE 8001
 
 # Set the command to run your application
 # Ensure this matches the binary name copied above
